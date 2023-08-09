@@ -9,10 +9,9 @@ import (
 	"time"
 )
 
-func (api *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user User) {
+func (api *apiConfig) handlerFollowFeed(w http.ResponseWriter, r *http.Request, user User) {
 	type parameters struct {
-		Name string `json:"name"`
-		Url  string `json:"url"`
+		FeedID uuid.UUID `json:"feed_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -26,13 +25,12 @@ func (api *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	feed, err := api.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+	feedFollow, err := api.DB.CreateFeedFollow(r.Context(), database.CreateFeedFollowParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
-		Name:      params.Name,
-		Url:       params.Url,
 		UserID:    user.ID,
+		FeedID:    params.FeedID,
 	})
 
 	if err != nil {
@@ -40,16 +38,16 @@ func (api *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 
-	respondWithJSON(w, 201, databaseFeedToFeed(feed))
+	respondWithJSON(w, 201, databaseFeedFollowToFeedFollow(feedFollow))
 }
 
-func (api *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
-	feeds, err := api.DB.GetFeeds(r.Context())
+func (api *apiConfig) handlerGetUserFeeds(w http.ResponseWriter, r *http.Request, user User) {
+	feedFollows, err := api.DB.GetFeedFollows(r.Context(), user.ID)
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintln("Could not get feeds: ", err))
+		responseWithError(w, 400, fmt.Sprintln("Could not create feed: ", err))
 		return
 	}
 
-	respondWithJSON(w, 200, databaseFeedsToFeeds(feeds))
+	respondWithJSON(w, 200, databaseFeedFollowsToFeedFollows(feedFollows))
 }

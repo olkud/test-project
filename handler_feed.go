@@ -9,9 +9,10 @@ import (
 	"time"
 )
 
-func (api *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) {
+func (api *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, user User) {
 	type parameters struct {
 		Name string `json:"name"`
+		Url  string `json:"url"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -25,21 +26,30 @@ func (api *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := api.DB.CreateUser(r.Context(), database.CreateUserParams{
+	feed, err := api.DB.CreateFeed(r.Context(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 		Name:      params.Name,
+		Url:       params.Url,
+		UserID:    user.ID,
 	})
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintln("Could not create user: ", err))
+		responseWithError(w, 400, fmt.Sprintln("Could not create feed: ", err))
 		return
 	}
 
-	respondWithJSON(w, 201, databaseUserToUser(user))
+	respondWithJSON(w, 201, databaseFeedToFeed(feed))
 }
 
-func (api *apiConfig) handlerGetUserByAPIKey(w http.ResponseWriter, r *http.Request, user database.User) {
-	respondWithJSON(w, 200, databaseUserToUser(user))
+func (api *apiConfig) handlerGetFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := api.DB.GetFeeds(r.Context())
+
+	if err != nil {
+		responseWithError(w, 400, fmt.Sprintln("Could not get feeds: ", err))
+		return
+	}
+
+	respondWithJSON(w, 200, databaseFeedsToFeeds(feeds))
 }
