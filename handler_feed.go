@@ -17,6 +17,7 @@ func (api *apiConfig) handlerCreateFeed(w http.ResponseWriter, r *http.Request, 
 
 	decoder := json.NewDecoder(r.Body)
 
+	defer r.Body.Close()
 	params := parameters{}
 
 	decodeError := decoder.Decode(&params)

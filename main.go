@@ -5,12 +5,12 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 	"github.com/olkud/test-project/internal/database"
 	"log"
 	"net/http"
 	"os"
-
-	_ "github.com/lib/pq"
+	"time"
 )
 
 type apiConfig struct {
@@ -41,6 +41,9 @@ func main() {
 	apiCfg := apiConfig{
 		DB: database.New(conn),
 	}
+
+	go startScraping(apiCfg.DB, 10, 1*time.Minute)
+
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
@@ -51,7 +54,6 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-
 	v1Router := chi.NewRouter()
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/error", handlerError)
@@ -61,6 +63,8 @@ func main() {
 	v1Router.Get("/feeds", apiCfg.handlerGetFeeds)
 	v1Router.Post("/feeds/follow", apiCfg.middlewareAuth(apiCfg.handlerFollowFeed))
 	v1Router.Get("/feeds/follow", apiCfg.middlewareAuth(apiCfg.handlerGetUserFeeds))
+	v1Router.Delete("/feeds/follow/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.handlerUnfollowFeed))
+	v1Router.Get("/feeds/follow/posts", apiCfg.middlewareAuth(apiCfg.handlerGetUserFollowedPosts))
 
 	router.Mount("/v1", v1Router)
 

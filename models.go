@@ -81,3 +81,32 @@ func databaseFeedFollowsToFeedFollows(feedFollows []database.FeedFollow) []FeedF
 
 	return convertedFeeds
 }
+
+type UserPost struct {
+	Title       string    `json:"title"`
+	Description *string   `json:"description"`
+	PublishedAt time.Time `json:"published_at"`
+	Url         string    `json:"url"`
+	FeedName    string    `json:"feed_name"`
+}
+
+func databaseGetPostsForUserRowToUserPosts(dbRows []database.GetPostsForUserRow) []UserPost {
+	var convertedFeeds []UserPost
+
+	for _, dbRow := range dbRows {
+		var desc *string
+
+		if dbRow.Description.Valid {
+			desc = &dbRow.Description.String
+		}
+		convertedFeeds = append(convertedFeeds, UserPost{
+			Title:       dbRow.Title,
+			Description: desc,
+			PublishedAt: dbRow.PublishedAt,
+			Url:         dbRow.Url,
+			FeedName:    dbRow.FeedName,
+		})
+	}
+
+	return convertedFeeds
+}

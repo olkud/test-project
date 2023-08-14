@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/olkud/test-project/internal/database"
 	"net/http"
@@ -45,9 +46,36 @@ func (api *apiConfig) handlerGetUserFeeds(w http.ResponseWriter, r *http.Request
 	feedFollows, err := api.DB.GetFeedFollows(r.Context(), user.ID)
 
 	if err != nil {
-		responseWithError(w, 400, fmt.Sprintln("Could not create feed: ", err))
+		responseWithError(w, 400, fmt.Sprintln("Could not get user feeds: ", err))
 		return
 	}
 
 	respondWithJSON(w, 200, databaseFeedFollowsToFeedFollows(feedFollows))
+}
+
+func (api *apiConfig) handlerUnfollowFeed(w http.ResponseWriter, r *http.Request, user User) {
+	feedFollowId := chi.URLParam(r, "feedFollowID")
+
+	if feedFollowId == "" {
+		respondWithJSON(w, 400, fmt.Sprintln("Invalid feedFollowID"))
+		return
+	}
+
+	uuidId, err := uuid.Parse(feedFollowId)
+
+	if err != nil {
+		respondWithJSON(w, 400, fmt.Sprintln("feedFollowID is not UUID"))
+	}
+
+	err = api.DB.DeleteFeedFollow(r.Context(), database.DeleteFeedFollowParams{
+		ID:     uuidId,
+		UserID: user.ID,
+	})
+
+	if err != nil {
+		responseWithError(w, 400, fmt.Sprintln("Could not unfollow feed: ", err))
+		return
+	}
+
+	respondWithJSON(w, 204, struct{}{})
 }
